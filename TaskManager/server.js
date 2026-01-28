@@ -8,18 +8,15 @@ app.use(express.static(__dirname));
 let tasks = [];
 let completedTasks = [];
 
-// Home
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-// Add task
 app.post("/add-task", (req, res) => {
   tasks.push(req.body.task);
   res.redirect("/");
 });
 
-// Complete task
 app.get("/complete/:index", (req, res) => {
   const index = req.params.index;
   completedTasks.push(tasks[index]);
@@ -27,7 +24,6 @@ app.get("/complete/:index", (req, res) => {
   res.redirect("/");
 });
 
-// Summary page
 app.get("/summary", (req, res) => {
   const list = completedTasks
     .map((task, i) => `<li>${task}</li>`)
@@ -40,7 +36,6 @@ app.get("/summary", (req, res) => {
   `);
 });
 
-// Show tasks
 app.get("/tasks", (req, res) => {
   const list = tasks
     .map(
