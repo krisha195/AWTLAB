@@ -1,0 +1,101 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  width: 380px;
+  margin: 90px auto;
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #3b7dd8;
+}
+
+.links {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.links a {
+  display: block;
+  margin: 6px 0;
+  text-decoration: none;
+  color: #4a90e2;
+  font-size: 14px;
+}
+
+.links a:hover {
+  text-decoration: underline;
+}
+
+/* Task lists */
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  background: #f9f9f9;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+li a {
+  text-decoration: none;
+  font-size: 13px;
+  color: green;
+}
+
+li a:hover {
+  text-decoration: underline;
+}

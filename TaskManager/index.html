@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <div class="container">
+    <h2>Task Manager</h2>
+
+    <form action="/add-task" method="POST">
+      <input type="text" name="task" placeholder="Enter task" required>
+      <button>Add Task</button>
+    </form>
+
+    <div class="links">
+      <a href="/tasks">View Pending Tasks</a>
+      <a href="/summary">Completed Task Summary</a>
+    </div>
+  </div>
+
+</body>
+</html>
