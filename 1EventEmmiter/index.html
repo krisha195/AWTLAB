@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - EventEmitter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Shopping Cart</h1>
+        <p>EventEmitter Learning Demo</p>
+
+        <div class="content">
+            <!-- Products -->
+            <div class="section">
+                <h2>Products</h2>
+                <div class="products">
+                    <div class="product">
+                        <h3>Laptop</h3>
+                        <p>$999</p>
+                        <button onclick="addProduct('Laptop', 999)">Add</button>
+                    </div>
+                    
+                    <div class="product">
+                        <h3>Phone</h3>
+                        <p>$599</p>
+                        <button onclick="addProduct('Phone', 599)">Add</button>
+                    </div>
+                    
+                    <div class="product">
+                        <h3>Headphones</h3>
+                        <p>$149</p>
+                        <button onclick="addProduct('Headphones', 149)">Add</button>
+                    </div>
+                    
+                    <div class="product">
+                        <h3>Mouse</h3>
+                        <p>$49</p>
+                        <button onclick="addProduct('Mouse', 49)">Add</button>
+                    </div>
+                    
+                    <div class="product">
+                        <h3>Keyboard</h3>
+                        <p>$79</p>
+                        <button onclick="addProduct('Keyboard', 79)">Add</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cart -->
+            <div class="section">
+                <h2>Cart</h2>
+                <button onclick="clearCart()" class="clear-btn">Clear Cart</button>
+                
+                <div id="cartItems" class="cart">
+                    <p>Cart is empty</p>
+                </div>
+                
+                <div class="total">
+                    <h3>Total: $<span id="total">0</span></h3>
+                    <button onclick="checkout()" class="checkout-btn">Checkout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="section">
+            <h2>Event Log</h2>
+            <div id="eventLog" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Log events
+        function logEvent(message) {
+            const log = document.getElementById('eventLog');
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.textContent = `[${time}] ${message}`;
+            log.insertBefore(div, log.firstChild);
+            
+            if (log.children.length > 10) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        // Add product
+        async function addProduct(name, price) {
+            try {
+                const response = await fetch('/api/cart/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, price, quantity: 1 })
+                });
+                
+                const data = await response.json();
+                updateCart(data);
+                logEvent(`Added ${name} ($${price})`);
+            } catch (error) {
+                logEvent(`Error: ${error.message}`);
+            }
+        }
+
+        // Remove item
+        async function removeItem(itemId, itemName) {
+            try {
+                const response = await fetch(`/api/cart/remove/${itemId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                updateCart(data);
+                logEvent(`Removed ${itemName}`);
+            } catch (error) {
+                logEvent(`Error: ${error.message}`);
+            }
+        }
+
+        // Clear cart
+        async function clearCart() {
+            try {
+                const response = await fetch('/api/cart/clear', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                updateCart(data);
+                logEvent('Cart cleared');
+            } catch (error) {
+                logEvent(`Error: ${error.message}`);
+            }
+        }
+
+        // Update cart display
+        function updateCart(data) {
+            const cartItems = document.getElementById('cartItems');
+            const totalEl = document.getElementById('total');
+            
+            if (data.items.length === 0) {
+                cartItems.innerHTML = '<p>Cart is empty</p>';
+            } else {
+                cartItems.innerHTML = data.items.map(item => `
+                    <div class="cart-item">
+                        <span>${item.name} - $${item.price} x ${item.quantity}</span>
+                        <button onclick="removeItem('${item.id}', '${item.name}')">Remove</button>
+                    </div>
+                `).join('');
+            }
+            
+            totalEl.textContent = data.total.toFixed(0);
+        }
+
+        // Checkout
+        function checkout() {
+            const total = document.getElementById('total').textContent;
+            
+            if (total === '0') {
+                alert('Cart is empty!');
+                return;
+            }
+            
+            alert(`Purchase complete! Total: $${total}`);
+            logEvent(`Checkout: $${total}`);
+            clearCart();
+        }
+
+        // Load cart
+        async function loadCart() {
+            try {
+                const response = await fetch('/api/cart');
+                const data = await response.json();
+                updateCart(data);
+                logEvent('Cart loaded');
+            } catch (error) {
+                logEvent(`Error: ${error.message}`);
+            }
+        }
+
+        window.addEventListener('load', loadCart);
+    </script>
+</body>
+</html>
