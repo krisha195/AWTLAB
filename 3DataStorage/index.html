@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechShop</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h2 id="authTitle">Welcome to TechShop</h2>
+            
+            <div id="loginForm" class="auth-form">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button onclick="login()" class="btn-primary">Login</button>
+                <p class="switch-auth">Don't have an account? <a onclick="showRegister()">Register</a></p>
+            </div>
+            
+            <div id="registerForm" class="auth-form" style="display: none;">
+                <input type="text" id="registerName" placeholder="Full Name" required>
+                <input type="email" id="registerEmail" placeholder="Email" required>
+                <input type="password" id="registerPassword" placeholder="Password" required>
+                <button onclick="register()" class="btn-primary">Register</button>
+                <p class="switch-auth">Already have an account? <a onclick="showLogin()">Login</a></p>
+            </div>
+            
+            <div id="authError" class="error-message"></div>
+        </div>
+    </div>
+
+    <div id="mainContainer" style="display: none;">
+        <header class="header">
+            <div class="header-content">
+                <h1>TechShop</h1>
+                <div class="header-right">
+                    <span id="userName" class="user-name"></span>
+                    <button onclick="showOrders()" class="btn-secondary">My Orders</button>
+                    <button onclick="logout()" class="btn-secondary">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('shop')">Shop</button>
+            <button class="nav-tab" onclick="showTab('cart')">Cart <span id="cartBadge" class="badge">0</span></button>
+            <button class="nav-tab" onclick="showTab('orders')">Orders</button>
+        </nav>
+
+        <div id="shopTab" class="tab-content active">
+            <div class="container">
+                <h2>Products</h2>
+                <div id="productsGrid" class="products-grid"></div>
+            </div>
+        </div>
+
+        <div id="cartTab" class="tab-content">
+            <div class="container">
+                <div class="cart-header">
+                    <h2>Shopping Cart</h2>
+                    <button onclick="clearCart()" class="btn-danger">Clear Cart</button>
+                </div>
+                
+                <div id="cartItems" class="cart-items">
+                    <p class="empty-message">Your cart is empty</p>
+                </div>
+                
+                <div id="cartSummary" class="cart-summary" style="display: none;">
+                    <div class="summary-row">
+                        <span>Total:</span>
+                        <span>INR <span id="cartTotal">0</span></span>
+                    </div>
+                    <button onclick="checkout()" class="btn-checkout">Checkout</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="ordersTab" class="tab-content">
+            <div class="container">
+                <h2>My Orders</h2>
+                <div id="ordersList" class="orders-list">
+                    <p class="empty-message">No orders yet</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script>
+        let sessionId = localStorage.getItem('sessionId');
+        let currentUser = null;
+
+        function showNotification(message) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.className = 'notification show';
+            setTimeout(() => {
+                notif.classList.remove('show');
+            }, 2000);
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('authTitle').textContent = 'Welcome Back';
+            document.getElementById('authError').textContent = '';
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('authTitle').textContent = 'Create Account';
+            document.getElementById('authError').textContent = '';
+        }
+
+        async function register() {
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            if (!name || !email || !password) {
+                document.getElementById('authError').textContent = 'Please fill all fields';
+                return;
+            }
+
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Registration successful');
+                showLogin();
+            } else {
+                document.getElementById('authError').textContent = data.message;
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                document.getElementById('authError').textContent = 'Please fill all fields';
+                return;
+            }
+
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                sessionId = data.sessionId;
+                currentUser = data.user;
+                localStorage.setItem('sessionId', sessionId);
+                
+                document.getElementById('authModal').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                document.getElementById('userName').textContent = 'Hello, ' + currentUser.name;
+                
+                loadProducts();
+                loadCart();
+                showNotification('Welcome back, ' + currentUser.name);
+            } else {
+                document.getElementById('authError').textContent = 'Invalid credentials';
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Session-Id': sessionId }
+            });
+
+            localStorage.removeItem('sessionId');
+            sessionId = null;
+            currentUser = null;
+            
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('authModal').style.display = 'flex';
+            showLogin();
+        }
+
+        async function checkAuth() {
+            if (!sessionId) {
+                document.getElementById('authModal').style.display = 'flex';
+                return;
+            }
+
+            const response = await fetch('/api/auth/me', {
+                headers: { 'Session-Id': sessionId }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                currentUser = data.user;
+                document.getElementById('authModal').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                document.getElementById('userName').textContent = 'Hello, ' + currentUser.name;
+                
+                loadProducts();
+                loadCart();
+            } else {
+                localStorage.removeItem('sessionId');
+                document.getElementById('authModal').style.display = 'flex';
+            }
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            
+            document.getElementById(tab + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+
+            if (tab === 'orders') {
+                loadOrders();
+            }
+        }
+
+        async function loadProducts() {
+            const response = await fetch('/api/products');
+            const products = await response.json();
+            
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <h3>${product.name}</h3>
+                    <p class="product-description">${product.description}</p>
+                    <div class="product-footer">
+                        <span class="product-price">INR ${product.price}</span>
+                        <span class="product-stock">Stock: ${product.stock}</span>
+                    </div>
+                    <div class="product-actions">
+                        <input type="number" id="qty-${product.id}" value="1" min="1" max="${product.stock}" class="qty-input">
+                        <button onclick="addToCart('${product.id}')" class="btn-add-cart" ${product.stock === 0 ? 'disabled' : ''}>
+                            ${product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addToCart(productId) {
+            const quantity = parseInt(document.getElementById('qty-' + productId).value);
+            
+            const response = await fetch('/api/cart/add', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Session-Id': sessionId
+                },
+                body: JSON.stringify({ productId, quantity })
+            });
+
+            const data = await response.json();
+            updateCartDisplay(data);
+            showNotification('Added to cart');
+        }
+
+        async function loadCart() {
+            const response = await fetch('/api/cart', {
+                headers: { 'Session-Id': sessionId }
+            });
+
+            const data = await response.json();
+            updateCartDisplay(data);
+        }
+
+        function updateCartDisplay(data) {
+            const cartItems = document.getElementById('cartItems');
+            const badge = document.getElementById('cartBadge');
+            
+            badge.textContent = data.items.length;
+
+            if (data.items.length === 0) {
+                cartItems.innerHTML = '<p class="empty-message">Your cart is empty</p>';
+                document.getElementById('cartSummary').style.display = 'none';
+            } else {
+                cartItems.innerHTML = data.items.map(item => `
+                    <div class="cart-item">
+                        <div class="cart-item-details">
+                            <h3>${item.name}</h3>
+                            <p class="cart-item-price">INR ${item.price}</p>
+                        </div>
+                        <div class="cart-item-quantity">
+                            <button onclick="updateItemQuantity('${item.id}', ${item.quantity - 1})" ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateItemQuantity('${item.id}', ${item.quantity + 1})">+</button>
+                        </div>
+                        <div class="cart-item-total">INR ${(item.price * item.quantity).toFixed(0)}</div>
+                        <button onclick="removeFromCart('${item.id}')" class="btn-remove">Remove</button>
+                    </div>
+                `).join('');
+
+                document.getElementById('cartTotal').textContent = data.total.toFixed(0);
+                document.getElementById('cartSummary').style.display = 'block';
+            }
+        }
+
+        async function updateItemQuantity(itemId, quantity) {
+            if (quantity < 1) return;
+
+            const response = await fetch('/api/cart/update', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Session-Id': sessionId
+                },
+                body: JSON.stringify({ itemId, quantity })
+            });
+
+            const data = await response.json();
+            updateCartDisplay(data);
+        }
+
+        async function removeFromCart(itemId) {
+            const response = await fetch('/api/cart/remove/' + itemId, {
+                method: 'DELETE',
+                headers: { 'Session-Id': sessionId }
+            });
+
+            const data = await response.json();
+            updateCartDisplay(data);
+            showNotification('Item removed');
+        }
+
+        async function clearCart() {
+            const response = await fetch('/api/cart/clear', {
+                method: 'POST',
+                headers: { 'Session-Id': sessionId }
+            });
+
+            const data = await response.json();
+            updateCartDisplay(data);
+            showNotification('Cart cleared');
+        }
+
+        async function checkout() {
+            const response = await fetch('/api/orders/checkout', {
+                method: 'POST',
+                headers: { 'Session-Id': sessionId }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Order placed successfully');
+                loadCart();
+                loadProducts();
+                showTab('orders');
+                loadOrders();
+            }
+        }
+
+        async function loadOrders() {
+            const response = await fetch('/api/orders', {
+                headers: { 'Session-Id': sessionId }
+            });
+
+            const orders = await response.json();
+            const ordersList = document.getElementById('ordersList');
+
+            if (orders.length === 0) {
+                ordersList.innerHTML = '<p class="empty-message">No orders yet</p>';
+            } else {
+                ordersList.innerHTML = orders.map(order => `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <h3>Order ${order.id}</h3>
+                            <span class="order-status ${order.status}">${order.status}</span>
+                        </div>
+                        <p class="order-date">${new Date(order.createdAt).toLocaleString()}</p>
+                        <div class="order-items">
+                            ${order.items.map(item => `
+                                <div class="order-item">
+                                    <span>${item.product_name}</span>
+                                    <span>${item.quantity} x INR ${item.price}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="order-total">Total: INR ${order.total.toFixed(0)}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function showOrders() {
+            showTab('orders');
+            loadOrders();
+        }
+
+        window.addEventListener('load', checkAuth);
+    </script>
+</body>
+</html>
