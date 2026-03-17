@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg:       #f4f2ee;
+  --surface:  #ffffff;
+  --border:   #e5e2db;
+  --text:     #1c1a17;
+  --muted:    #8a8580;
+  --accent:   #2f6af5;
+  --accent-h: #1d57e0;
+  --green:    #1a9e5c;
+  --radius:   12px;
+  --shadow:   0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px var(--border);
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 3rem 1rem;
+}
+
+/* ── CARD ─────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* header strip */
+.container > h2 {
+  background: var(--text);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 18px 28px;
+  margin: 0;
+}
+
+/* form area */
+form {
+  padding: 24px 28px 0;
+  display: flex;
+  gap: 10px;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  transition: border-color .15s;
+  outline: none;
+}
+
+input[type="text"]::placeholder {
+  color: var(--muted);
+}
+
+input[type="text"]:focus {
+  border-color: var(--accent);
+  background: #fff;
+}
+
+button {
+  padding: 10px 18px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, transform .1s;
+}
+
+button:hover  { background: var(--accent-h); }
+button:active { transform: scale(.97); }
+
+/* ── NAV LINKS ────────────────────────── */
+.links {
+  padding: 20px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  transition: color .15s, border-color .15s, background .15s;
+}
+
+.links a::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background .15s;
+}
+
+.links a:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.links a:hover::before {
+  background: var(--accent);
+}
+
+/* ── TASK LIST PAGES ──────────────────── */
+body > h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+li {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  transition: border-color .15s;
+}
+
+li:hover {
+  border-color: #c8c4bc;
+}
+
+li a {
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  padding: 5px 11px;
+  border: 1px solid currentColor;
+  border-radius: 20px;
+  transition: background .15s, color .15s;
+}
+
+li a:hover {
+  background: var(--green);
+  color: #fff;
+}
+
+/* back link + summary page */
+body > a {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color .15s;
+}
+
+body > a:hover {
+  color: var(--accent);
+}
+
+p {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 16px 0;
+}
