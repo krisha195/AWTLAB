@@ -1,138 +1,147 @@
-const http = require('http');
-const fs = require('fs');
-const EventEmitter = require('events');
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const EventEmitter = require("events");
+const path = require("path");
 
-class ShoppingCart extends EventEmitter {
-    constructor() {
-        super();
-        this.items = [];
-        this.total = 0;
-        
-        this.on('itemAdded', (item) => {
-            console.log(`Item added: ${item.name} - $${item.price}`);
-        });
-        
-        this.on('itemRemoved', (item) => {
-            console.log(`Item removed: ${item.name}`);
-        });
-        
-        this.on('cartCleared', () => {
-            console.log('Cart cleared');
-        });
-        
-        this.on('totalUpdated', (total) => {
-            console.log(`Total: $${total.toFixed(2)}`);
-        });
-    }
-    
-    addItem(item) {
-        this.items.push(item);
-        this.total += item.price * item.quantity;
-        this.emit('itemAdded', item);
-        this.emit('totalUpdated', this.total);
-        return this.items;
-    }
-    
-    removeItem(itemId) {
-        const itemIndex = this.items.findIndex(item => item.id === itemId);
-        if (itemIndex !== -1) {
-            const removedItem = this.items[itemIndex];
-            this.total -= removedItem.price * removedItem.quantity;
-            this.items.splice(itemIndex, 1);
-            this.emit('itemRemoved', removedItem);
-            this.emit('totalUpdated', this.total);
-        }
-        return this.items;
-    }
-    
-    clearCart() {
-        this.items = [];
-        this.total = 0;
-        this.emit('cartCleared');
-        this.emit('totalUpdated', this.total);
-        return this.items;
-    }
-    
-    getItems() {
-        return this.items;
-    }
-    
-    getTotal() {
-        return this.total;
-    }
+const app = express();
+const shopEvents = new EventEmitter();
+
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, "public")));
+
+// ── Data store ────────────────────────────────────────────────
+let users = [];
+let carts = {};      // { email: [{ id, name, price, qty }] }
+let orders = {};     // { email: [ order ] }
+let eventLog = [];   // last 50 events shown in UI
+
+const products = [
+  { id: 1, name: "Wireless Headphones", price: 2000, emoji: "🎧", category: "Electronics" },
+  { id: 2, name: "Smart Watch",          price: 5000, emoji: "⌚", category: "Electronics" },
+  { id: 3, name: "Running Shoes",        price: 3000, emoji: "👟", category: "Fashion"     },
+  { id: 4, name: "Sunglasses",           price: 1500, emoji: "🕶️", category: "Fashion"     },
+  { id: 5, name: "Backpack",             price: 2500, emoji: "🎒", category: "Accessories" },
+  { id: 6, name: "Water Bottle",         price: 800,  emoji: "🍶", category: "Accessories" },
+];
+
+// ── Event logging ────────────────────────────────────────────
+function logEvent(type, message) {
+  const entry = { type, message, time: new Date().toLocaleTimeString() };
+  eventLog.unshift(entry);
+  if (eventLog.length > 50) eventLog.pop();
+  shopEvents.emit(type, entry);
 }
 
-const cart = new ShoppingCart();
+// ── Auth ─────────────────────────────────────────────────────
+app.post("/register", (req, res) => {
+  const { username, email, password } = req.body;
+  if (!username || !email || !password)
+    return res.status(400).json({ message: "All fields required" });
+  if (users.find(u => u.email === email))
+    return res.status(400).json({ message: "Email already registered" });
 
-const server = http.createServer((req, res) => {
-    if (req.url === '/' || req.url === '/index.html') {
-        fs.readFile('index.html', (err, content) => {
-            if (err) {
-                res.writeHead(500);
-                res.end('Error');
-            } else {
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.end(content);
-            }
-        });
-    }
-    else if (req.url === '/style.css') {
-        fs.readFile('style.css', (err, content) => {
-            if (err) {
-                res.writeHead(500);
-                res.end('Error');
-            } else {
-                res.writeHead(200, { 'Content-Type': 'text/css' });
-                res.end(content);
-            }
-        });
-    }
-    else if (req.url === '/api/cart' && req.method === 'GET') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-            items: cart.getItems(),
-            total: cart.getTotal()
-        }));
-    }
-    else if (req.url === '/api/cart/add' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => body += chunk.toString());
-        req.on('end', () => {
-            const item = JSON.parse(body);
-            item.id = Date.now().toString();
-            cart.addItem(item);
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-                items: cart.getItems(),
-                total: cart.getTotal()
-            }));
-        });
-    }
-    else if (req.url.startsWith('/api/cart/remove/') && req.method === 'DELETE') {
-        const itemId = req.url.split('/').pop();
-        cart.removeItem(itemId);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-            items: cart.getItems(),
-            total: cart.getTotal()
-        }));
-    }
-    else if (req.url === '/api/cart/clear' && req.method === 'POST') {
-        cart.clearCart();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-            items: cart.getItems(),
-            total: cart.getTotal()
-        }));
-    }
-    else {
-        res.writeHead(404);
-        res.end('Not found');
-    }
+  users.push({ username, email, password });
+  carts[email] = [];
+  orders[email] = [];
+  logEvent("register", `New user registered: ${username}`);
+  res.json({ message: "Registered successfully", username });
 });
 
-const PORT = 3001;
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}/`);
-    console.log('EventEmitter is active...\n');
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) return res.status(400).json({ message: "Invalid email or password" });
+
+  logEvent("login", `${user.username} logged in`);
+  res.json({ message: "Login successful", username: user.username, email: user.email });
 });
+
+// ── Products ──────────────────────────────────────────────────
+app.get("/products", (req, res) => {
+  res.json(products);
+});
+
+// ── Cart ──────────────────────────────────────────────────────
+app.get("/cart", (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ message: "Email required" });
+  res.json(carts[email] || []);
+});
+
+app.post("/cart", (req, res) => {
+  const { email, productId } = req.body;
+  if (!email || !productId)
+    return res.status(400).json({ message: "Email and productId required" });
+
+  const product = products.find(p => p.id === productId);
+  if (!product) return res.status(404).json({ message: "Product not found" });
+
+  if (!carts[email]) carts[email] = [];
+  const existing = carts[email].find(i => i.id === productId);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    carts[email].push({ ...product, qty: 1 });
+  }
+
+  logEvent("cart", `Item added to cart: ${product.name}`);
+  res.json({ message: "Added to cart", cart: carts[email] });
+});
+
+app.patch("/cart", (req, res) => {
+  const { email, productId, delta } = req.body;
+  if (!carts[email]) return res.status(400).json({ message: "No cart found" });
+
+  const item = carts[email].find(i => i.id === productId);
+  if (!item) return res.status(404).json({ message: "Item not in cart" });
+
+  item.qty += delta;
+  if (item.qty <= 0) carts[email] = carts[email].filter(i => i.id !== productId);
+
+  res.json({ message: "Cart updated", cart: carts[email] });
+});
+
+app.delete("/cart", (req, res) => {
+  const { email, productId } = req.body;
+  if (!carts[email]) return res.status(400).json({ message: "No cart" });
+  carts[email] = carts[email].filter(i => i.id !== productId);
+  res.json({ message: "Removed", cart: carts[email] });
+});
+
+// ── Checkout ─────────────────────────────────────────────────
+app.post("/checkout", (req, res) => {
+  const { email } = req.body;
+  if (!carts[email] || carts[email].length === 0)
+    return res.status(400).json({ message: "Cart is empty" });
+
+  const total = carts[email].reduce((s, i) => s + i.price * i.qty, 0);
+  const order = {
+    id: `ORD-${Date.now()}`,
+    items: [...carts[email]],
+    total,
+    date: new Date().toLocaleString(),
+  };
+
+  if (!orders[email]) orders[email] = [];
+  orders[email].unshift(order);
+  carts[email] = [];
+
+  logEvent("order", `Order placed: ${order.id} — ₹${total.toLocaleString()}`);
+  res.json({ message: "Order placed", order });
+});
+
+// ── Orders ────────────────────────────────────────────────────
+app.get("/orders", (req, res) => {
+  const { email } = req.query;
+  res.json(orders[email] || []);
+});
+
+// ── Event log ─────────────────────────────────────────────────
+app.get("/events", (req, res) => {
+  res.json(eventLog);
+});
+
+// ── Start ─────────────────────────────────────────────────────
+app.listen(3000, () => console.log("Server running → http://localhost:3000"));
