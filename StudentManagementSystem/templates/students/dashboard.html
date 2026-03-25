@@ -1,0 +1,90 @@
+{% extends 'students/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon">🎓</div>
+    <div class="stat-label">Total Students</div>
+    <div class="stat-value">{{ total_students }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">✅</div>
+    <div class="stat-label">Active Students</div>
+    <div class="stat-value">{{ active_students }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📚</div>
+    <div class="stat-label">Courses</div>
+    <div class="stat-value">{{ total_courses }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🏛️</div>
+    <div class="stat-label">Departments</div>
+    <div class="stat-value">{{ total_departments }}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px">
+  <div class="card">
+    <div class="flex-between">
+      <div class="section-title">Recent Students</div>
+      <a href="{% url 'student_list' %}" class="btn btn-ghost btn-sm">View All</a>
+    </div>
+    <table>
+      <thead><tr><th>Student</th><th>Department</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in recent_students %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="avatar" style="font-size:12px">{{ s.first_name.0 }}{{ s.last_name.0 }}</div>
+              <div>
+                <div style="font-weight:500">{{ s.full_name }}</div>
+                <div class="text-muted">{{ s.student_id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ s.department.name|default:"—" }}</td>
+          <td><span class="badge badge-{{ s.status }}">{{ s.get_status_display }}</span></td>
+        </tr>
+        {% empty %}<tr><td colspan="3" class="text-muted" style="text-align:center;padding:32px">No students yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:16px">Student Status</div>
+      {% for status, count in status_counts.items %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+        <span class="badge badge-{{ status }}" style="width:90px;justify-content:center">{{ status|title }}</span>
+        <span style="font-weight:700;font-family:'Syne',sans-serif">{{ count }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:16px">Top Departments</div>
+      {% for d in dept_stats %}
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>{{ d.name }}</span><span style="color:var(--muted)">{{ d.student_count }} students</span>
+        </div>
+        <div style="background:var(--border);border-radius:4px;height:5px">
+          <div style="background:linear-gradient(90deg,var(--accent),var(--accent2));height:5px;border-radius:4px;width:{% if total_students %}{% widthratio d.student_count total_students 100 %}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;gap:16px;margin-top:8px">
+  <a href="{% url 'student_create' %}" class="btn btn-primary">➕ Add Student</a>
+  <a href="{% url 'course_create' %}" class="btn btn-ghost">📚 Add Course</a>
+  <a href="{% url 'department_create' %}" class="btn btn-ghost">🏛️ Add Department</a>
+  <a href="{% url 'enrollment_create' %}" class="btn btn-ghost">📋 Enroll Student</a>
+</div>
+{% endblock %}

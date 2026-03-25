@@ -1,0 +1,15 @@
+{% extends 'students/base.html' %}
+{% block title %}Delete {{ type }}{% endblock %}
+{% block page_title %}Confirm Delete{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;text-align:center;padding:48px">
+  <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+  <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:8px">Delete {{ type }}</div>
+  <div class="text-muted" style="margin-bottom:32px">Are you sure you want to delete <strong style="color:var(--text)">{{ object }}</strong>? This action cannot be undone.</div>
+  <form method="post" style="display:flex;gap:12px;justify-content:center">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">🗑️ Yes, Delete</button>
+    <a href="javascript:history.back()" class="btn btn-ghost">Cancel</a>
+  </form>
+</div>
+{% endblock %}

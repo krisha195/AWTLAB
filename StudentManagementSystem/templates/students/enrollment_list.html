@@ -1,0 +1,27 @@
+{% extends 'students/base.html' %}
+{% block title %}Enrollments{% endblock %}
+{% block page_title %}Enrollments{% endblock %}
+{% block content %}
+<div class="flex-between">
+  <div></div>
+  <a href="{% url 'enrollment_create' %}" class="btn btn-primary">➕ Enroll Student</a>
+</div>
+<div class="card">
+  <table>
+    <thead><tr><th>Student</th><th>Course</th><th>Semester</th><th>Enrolled</th><th>Grade</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for e in enrollments %}
+      <tr>
+        <td><a href="{% url 'student_detail' e.student.pk %}" style="color:var(--accent);text-decoration:none;font-weight:600">{{ e.student.full_name }}</a><div class="text-muted">{{ e.student.student_id }}</div></td>
+        <td><div style="font-weight:500">{{ e.course.name }}</div><div class="text-muted">{{ e.course.code }}</div></td>
+        <td>{{ e.semester }}</td>
+        <td class="text-muted">{{ e.enrolled_date }}</td>
+        <td><span class="badge badge-{{ e.grade|lower }}">{{ e.grade }}</span></td>
+        <td><a href="{% url 'enrollment_delete' e.pk %}" class="btn btn-danger btn-sm">Remove</a></td>
+      </tr>
+      {% empty %}<tr><td colspan="6" style="text-align:center;padding:48px" class="text-muted">No enrollments yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
