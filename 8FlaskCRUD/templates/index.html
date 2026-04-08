@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssignFlow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+{% macro render_card(a, today) %}
+{% set is_overdue = (a.status != 'Done') and (a.due_date < today) %}
+<div class="assign-card {% if a.status == 'Done' %}card-done{% elif is_overdue %}card-overdue{% endif %}">
+    <div class="card-left">
+        <div class="assign-title {% if a.status == 'Done' %}done-text{% endif %}">{{ a.title }}</div>
+        <div class="assign-meta">
+            <span><i class="fa-regular fa-calendar"></i> {{ a.due_date.strftime('%d %b %Y') }}</span>
+            <span class="priority-tag priority-{{ a.priority.lower() }}">{{ a.priority }}</span>
+            {% if is_overdue %}<span class="overdue-tag"><i class="fa-solid fa-triangle-exclamation"></i> Overdue</span>{% endif %}
+        </div>
+    </div>
+    <div class="actions">
+        <a href="/view/{{ a.id }}" title="View"><i class="fa-solid fa-eye"></i></a>
+        {% if a.status != 'Done' %}
+        <a href="/status/{{ a.id }}/done" class="btn-done" title="Mark Done"><i class="fa-solid fa-check"></i></a>
+        {% else %}
+        <a href="/status/{{ a.id }}/pending" class="btn-undo" title="Undo"><i class="fa-solid fa-rotate-left"></i></a>
+        {% endif %}
+        <a href="/edit/{{ a.id }}" class="btn-edit" title="Edit"><i class="fa-solid fa-pen"></i></a>
+        <a href="/delete/{{ a.id }}" class="btn-delete" title="Delete"><i class="fa-solid fa-trash"></i></a>
+    </div>
+</div>
+{% endmacro %}
+
+<div class="page-wrapper">
+
+    <div class="header">
+        <h1><i class="fa-solid fa-graduation-cap"></i> AssignFlow</h1>
+        <p>Manage your assignments efficiently</p>
+    </div>
+
+    {% set pending = assignments | selectattr('status', 'equalto', 'Pending') | list %}
+    {% set done    = assignments | selectattr('status', 'equalto', 'Done')    | list %}
+    {% set overdue = assignments | selectattr('status', 'ne', 'Done') | selectattr('due_date', 'lt', today) | list %}
+
+    <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">{{ assignments|length }}</div><div class="stat-label">Total</div></div>
+        <div class="stat-card pending-stat"><div class="stat-num">{{ pending|length }}</div><div class="stat-label">Pending</div></div>
+        <div class="stat-card done-stat"><div class="stat-num">{{ done|length }}</div><div class="stat-label">Done</div></div>
+        <div class="stat-card overdue-stat"><div class="stat-num">{{ overdue|length }}</div><div class="stat-label">Overdue</div></div>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title"><i class="fa-solid fa-plus"></i> Add Assignment</h2>
+        <form action="/add" method="POST" class="add-form">
+            <div class="form-group full-width">
+                <label>Title</label>
+                <input type="text" name="title" placeholder="Assignment title" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Due Date</label>
+                    <input type="date" name="due_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select name="priority">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn-submit"><i class="fa-solid fa-plus"></i> Add Assignment</button>
+        </form>
+    </div>
+
+    <div class="section-label">
+        <i class="fa-regular fa-clock"></i> Pending <span class="badge">{{ pending|length }}</span>
+    </div>
+    <div class="assign-group">
+        {% if pending %}
+            {% for a in pending %}{{ render_card(a, today) }}{% endfor %}
+        {% else %}
+            <div class="empty-msg">No pending assignments!</div>
+        {% endif %}
+    </div>
+
+    <div class="section-label done-label">
+        <i class="fa-solid fa-circle-check"></i> Done <span class="badge done-badge">{{ done|length }}</span>
+    </div>
+    <div class="assign-group">
+        {% if done %}
+            {% for a in done %}{{ render_card(a, today) }}{% endfor %}
+        {% else %}
+            <div class="empty-msg">No completed assignments yet.</div>
+        {% endif %}
+    </div>
+
+</div>
+</body>
+</html>
